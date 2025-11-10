@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portail Interministériel | Authentification</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #020305;
+        --text: #f4f5f9;
+        --muted: rgba(244, 245, 249, 0.58);
+        --accent-blue: #0f59d1;
+        --accent-red: #d1262c;
+        --accent-white: #f4f5f9;
+        --border: rgba(113, 136, 178, 0.35);
+        font-family: "Marianne", "Segoe UI", system-ui, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at 20% 20%, rgba(21, 29, 54, 0.65), transparent 55%),
+          radial-gradient(circle at 80% 0%, rgba(18, 30, 55, 0.45), transparent 50%), var(--bg);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .tricolore {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 6px;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        z-index: 10;
+      }
+
+      .tricolore span:nth-child(1) {
+        background: var(--accent-blue);
+      }
+      .tricolore span:nth-child(2) {
+        background: var(--accent-white);
+      }
+      .tricolore span:nth-child(3) {
+        background: var(--accent-red);
+      }
+
+      .frame {
+        position: relative;
+        max-width: 420px;
+        width: 100%;
+        padding: 48px 40px;
+        border-radius: 22px;
+        background: rgba(9, 13, 24, 0.86);
+        border: 1px solid var(--border);
+        box-shadow: 0 24px 65px rgba(2, 5, 12, 0.7);
+        backdrop-filter: blur(8px);
+        overflow: hidden;
+      }
+
+      .frame::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(15, 85, 210, 0.1), rgba(209, 38, 44, 0.05));
+        pointer-events: none;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .subtitle {
+        margin-top: 12px;
+        color: var(--muted);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-size: 12px;
+      }
+
+      form {
+        margin-top: 36px;
+        display: grid;
+        gap: 20px;
+      }
+
+      label {
+        display: grid;
+        gap: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        font-size: 11px;
+        color: rgba(244, 245, 249, 0.68);
+      }
+
+      input {
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(115, 136, 182, 0.35);
+        background: rgba(8, 11, 22, 0.9);
+        color: var(--text);
+        font-size: 15px;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 2px rgba(15, 89, 209, 0.35);
+      }
+
+      button {
+        margin-top: 8px;
+        padding: 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(244, 245, 249, 0.25);
+        background: linear-gradient(135deg, rgba(14, 74, 188, 0.85), rgba(209, 38, 44, 0.75));
+        color: var(--accent-white);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        font-weight: 600;
+        font-size: 12px;
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 34px rgba(12, 48, 120, 0.35);
+      }
+
+      .notice {
+        margin-top: 18px;
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(244, 245, 249, 0.45);
+        line-height: 1.6;
+      }
+
+      .error {
+        display: none;
+        margin-top: 4px;
+        color: rgba(209, 38, 44, 0.85);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .error.visible {
+        display: block;
+      }
+
+      .scan-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 4, 8, 0.92);
+        display: grid;
+        place-items: center;
+        color: var(--accent-white);
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        font-size: 18px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.26s ease;
+        z-index: 20;
+      }
+
+      .scan-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .scan-overlay::before,
+      .scan-overlay::after {
+        content: "";
+        position: absolute;
+        width: 0%;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(14, 74, 188, 0.5), rgba(209, 38, 44, 0.85));
+        animation: sweep 1.8s ease-in-out infinite;
+      }
+
+      .scan-overlay::after {
+        animation-delay: 0.4s;
+        opacity: 0.7;
+      }
+
+      @keyframes sweep {
+        0% {
+          width: 0%;
+          left: 0;
+        }
+        50% {
+          width: 75%;
+          left: 12%;
+        }
+        100% {
+          width: 0%;
+          left: 100%;
+        }
+      }
+
+      .scan-message {
+        display: grid;
+        gap: 18px;
+        text-align: center;
+        line-height: 1.8;
+      }
+
+      .scan-message span {
+        font-size: 13px;
+        color: rgba(244, 245, 249, 0.58);
+      }
+
+      .scan-message strong {
+        font-size: 14px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: rgba(244, 245, 249, 0.78);
+      }
+
+      .progress-bar {
+        position: relative;
+        width: 220px;
+        height: 6px;
+        border-radius: 999px;
+        overflow: hidden;
+        border: 1px solid rgba(244, 245, 249, 0.2);
+        margin: 0 auto;
+      }
+
+      .progress-bar span {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(14, 74, 188, 0.85), rgba(209, 38, 44, 0.9));
+        transform: scaleX(0);
+        transform-origin: left;
+        animation: progress 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+
+      @keyframes progress {
+        to {
+          transform: scaleX(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tricolore"><span></span><span></span><span></span></div>
+    <main class="frame" aria-labelledby="titre-portail">
+      <h1 id="titre-portail">Portail Interministériel</h1>
+      <p class="subtitle">Authentification | usage réservé</p>
+      <form id="login-form" autocomplete="off" novalidate>
+        <label>
+          Identifiant sécurisé
+          <input
+            type="text"
+            name="identifiant"
+            id="identifiant"
+            inputmode="email"
+            placeholder=""
+            required
+          />
+        </label>
+        <label>
+          Mot de passe
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="********"
+            required
+          />
+        </label>
+        <p id="error-message" class="error">Identifiants invalides.</p>
+        <button type="submit">Vérification d’accréditation</button>
+      </form>
+      <p class="notice">
+        Toute connexion est enregistrée et contrôlée. Accès strictement réservé aux personnels
+        habilités. Article 413-10 du code pénal.
+      </p>
+    </main>
+
+    <div class="scan-overlay" id="scan-overlay" aria-live="assertive">
+      <div class="scan-message">
+        <strong>Connexion autorisée</strong>
+        <span>Initiation du canal confidentiel</span>
+        <div class="progress-bar"><span></span></div>
+      </div>
+    </div>
+
+    <script>
+      const VALID_ID = "nicolas.androuet";
+      const VALID_PASSWORD = "FelixP";
+
+      const form = document.getElementById("login-form");
+      const identifiantInput = document.getElementById("identifiant");
+      const passwordInput = document.getElementById("password");
+      const errorMessage = document.getElementById("error-message");
+      const overlay = document.getElementById("scan-overlay");
+
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.add("visible");
+      }
+
+      function hideError() {
+        errorMessage.classList.remove("visible");
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        hideError();
+
+        const idValue = identifiantInput.value.trim().toLowerCase();
+        const passValue = passwordInput.value.trim();
+
+        if (idValue === VALID_ID && passValue === VALID_PASSWORD) {
+          overlay.classList.add("active");
+          setTimeout(() => {
+            overlay.classList.remove("active");
+            window.location.href = "index.html";
+          }, 1900);
+        } else {
+          showError("Identifiants invalides.");
+          passwordInput.value = "";
+          passwordInput.focus();
+        }
+      });
+    </script>
+  </body>
+</html>
+
